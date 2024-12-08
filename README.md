@@ -23,7 +23,7 @@ System Action Scheduler is a simple yet powerful desktop application that allows
 
 ### Download the Executable File:
 - Download the Scheduler.exe file from the provided link.
-- Download link : <a href="https://github.com/usmanbvp/system-action-scheduler/blob/main/dist/scheduler.exe">Click me </a>
+-  👉 [Download Scheduler.exe](https://github.com/usmanbvp/system-action-scheduler/blob/main/dist/scheduler.exe)
 
 ### Run the Application:
 - Simply double-click the Scheduler.exe file to launch the app. There's no need for installation or setting up dependencies.
