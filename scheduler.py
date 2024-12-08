@@ -3,7 +3,17 @@ import time
 import tkinter as tk
 from tkinter import messagebox
 import webbrowser
+import sys
 
+# Function to handle resource paths in both development and bundled executable
+def resource_path(relative_path):
+    """Get the path to the resource, works for dev and PyInstaller."""
+    try:
+        # PyInstaller creates a temporary folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 def schedule_action(action, delay, url=None):
     """
@@ -28,7 +38,6 @@ def schedule_action(action, delay, url=None):
     elif action == "open_url":
         if url:
             webbrowser.open(url)
-
 
 def start_timer(action, time_value, time_unit, url=None):
     """
@@ -58,7 +67,6 @@ def start_timer(action, time_value, time_unit, url=None):
     except ValueError:
         messagebox.showerror("Invalid Input", "Please enter a valid time value.")
 
-
 def create_rounded_rectangle(canvas, x1, y1, x2, y2, r, **kwargs):
     """
     Creates a rectangle with rounded corners on a canvas.
@@ -75,7 +83,6 @@ def create_rounded_rectangle(canvas, x1, y1, x2, y2, r, **kwargs):
     ]
     return canvas.create_polygon(points, smooth=True, **kwargs)
 
-
 def create_action_button(action, column, logo_path):
     """
     Creates a section with logo, time input, and a start button for each action.
@@ -86,7 +93,7 @@ def create_action_button(action, column, logo_path):
     create_rounded_rectangle(canvas, 10, 10, 170, 270, 20, fill="#f4a261", outline="#f4a261")
 
     # Place widgets over the canvas
-    logo = tk.PhotoImage(file=logo_path)  # Load logo image
+    logo = tk.PhotoImage(file=resource_path(logo_path))  # Use resource_path to get the correct image path
     logo_label = tk.Label(canvas, image=logo, bg="#f4a261")
     logo_label.image = logo  # Keep reference to the image
     logo_label.place(x=50, y=20)
@@ -147,10 +154,10 @@ heading.grid(row=0, column=0, columnspan=4, pady=20)
 root.grid_rowconfigure(1, minsize=20)
 
 # Create action sections
-create_action_button("restart", 0, "./restart.png")  # Replace with actual path to the restart logo
-create_action_button("shutdown", 1, "./shutdown.png")  # Replace with actual path to the shutdown logo
-create_action_button("sleep", 2, "./sleep.png")  # Replace with actual path to the sleep logo
-create_action_button("open_url", 3, "./url.png")  # Replace with actual path to the URL logo
+create_action_button("restart", 0, "restart.png")  # Use relative paths for images
+create_action_button("shutdown", 1, "shutdown.png")  # Use relative paths for images
+create_action_button("sleep", 2, "sleep.png")  # Use relative paths for images
+create_action_button("open_url", 3, "url.png")  # Use relative paths for images
 
 # Run the app
 root.mainloop()
