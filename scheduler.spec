@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['scheduler.py'],
+    ['Scheduler.py'],
     pathex=[],
     binaries=[],
-    datas=[('restart.png', '.'), ('shutdown.png', '.'), ('sleep.png', '.'), ('url.png', '.')],
+    datas=[('restart.png', '.'), ('shutdown.png', '.'), ('sleep.png', '.'), ('icon.png', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -22,17 +22,18 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='scheduler',
+    name='Scheduler',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['icon.png'],
 )

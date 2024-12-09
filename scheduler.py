@@ -2,162 +2,118 @@ import os
 import time
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 import webbrowser
 import sys
 
-# Function to handle resource paths in both development and bundled executable
+# Function to handle resource paths
 def resource_path(relative_path):
     """Get the path to the resource, works for dev and PyInstaller."""
     try:
-        # PyInstaller creates a temporary folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
+# Schedule action
 def schedule_action(action, delay, url=None):
-    """
-    Schedules a system action after the specified delay in seconds.
-    """
     time.sleep(delay)
     if action == "shutdown":
-        if os.name == 'nt':  # For Windows
-            os.system("shutdown /s /t 1")
-        elif os.name == 'posix':  # For Linux/Mac
-            os.system("shutdown -h now")
+        os.system("shutdown /s /t 1") if os.name == "nt" else os.system("shutdown -h now")
     elif action == "restart":
-        if os.name == 'nt':  # For Windows
-            os.system("shutdown /r /t 1")
-        elif os.name == 'posix':  # For Linux/Mac
-            os.system("shutdown -r now")
+        os.system("shutdown /r /t 1") if os.name == "nt" else os.system("shutdown -r now")
     elif action == "sleep":
-        if os.name == 'nt':  # For Windows
-            os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
-        elif os.name == 'posix':  # For Linux/Mac
-            os.system("pmset sleepnow")
-    elif action == "open_url":
-        if url:
-            webbrowser.open(url)
+        os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0") if os.name == "nt" else os.system("pmset sleepnow")
+    elif action == "open_url" and url:
+        webbrowser.open(url)
 
+# Start timer
 def start_timer(action, time_value, time_unit, url=None):
-    """
-    Starts the timer based on user input and action.
-    """
     try:
-        if not time_value:  # Check if time is not entered
+        if not time_value:
             messagebox.showerror("Input Error", "Please enter a valid time value.")
             return
-        
-        if action == "open_url" and (not url or url.strip() == ""):  # Check if URL is required and entered
+        if action == "open_url" and (not url or url.strip() == ""):
             messagebox.showerror("Input Error", "Please enter a valid URL.")
             return
-        
-        # Convert time to seconds
-        if time_unit == "sec":
-            delay = time_value
-        elif time_unit == "min":
-            delay = time_value * 60
-        elif time_unit == "hour":
-            delay = time_value * 3600
-
-        # Confirmation dialog
+        delay = time_value * (60 if time_unit == "min" else 3600 if time_unit == "hour" else 1)
         if messagebox.askyesno("Confirmation", f"Are you sure you want to {action} in {time_value} {time_unit}(s)?"):
-            messagebox.showinfo("Timer Set", f"The system will {action} in {time_value} {time_unit}(s).")
             root.after(100, schedule_action, action, delay, url)
+            clear_fields()  # Clear the fields after starting the timer
     except ValueError:
-        messagebox.showerror("Invalid Input", "Please enter a valid time value.")
+        messagebox.showerror("Invalid Input", "Please enter valid values.")
 
-def create_rounded_rectangle(canvas, x1, y1, x2, y2, r, **kwargs):
-    """
-    Creates a rectangle with rounded corners on a canvas.
-    """
-    points = [
-        (x1 + r, y1), (x1 + r, y1),  # Top-left corner
-        (x2 - r, y1), (x2 - r, y1),  # Top-right corner
-        (x2, y1 + r), (x2, y1 + r),
-        (x2, y2 - r), (x2, y2 - r),  # Bottom-right corner
-        (x2 - r, y2), (x2 - r, y2),
-        (x1 + r, y2), (x1 + r, y2),  # Bottom-left corner
-        (x1, y2 - r), (x1, y2 - r),
-        (x1, y1 + r), (x1, y1 + r)
-    ]
-    return canvas.create_polygon(points, smooth=True, **kwargs)
+# Clear input fields
+def clear_fields():
+    time_entry.delete(0, tk.END)  # Clear the time entry field
+    url_entry.delete(0, tk.END)  # Clear the URL entry field if visible
 
-def create_action_button(action, column, logo_path):
-    """
-    Creates a section with logo, time input, and a start button for each action.
-    """
-    # Create a canvas for the rounded rectangle
-    canvas = tk.Canvas(root, width=180, height=280, bg="#d4f1f9", highlightthickness=0)
-    canvas.grid(row=2, column=column, padx=20, pady=10)
-    create_rounded_rectangle(canvas, 10, 10, 170, 270, 20, fill="#f4a261", outline="#f4a261")
-
-    # Place widgets over the canvas
-    logo = tk.PhotoImage(file=resource_path(logo_path))  # Use resource_path to get the correct image path
-    logo_label = tk.Label(canvas, image=logo, bg="#f4a261")
-    logo_label.image = logo  # Keep reference to the image
-    logo_label.place(x=50, y=20)
-
-    # Adjusted spacing for "Enter time" text
-    time_label = tk.Label(canvas, text="Enter time:", bg="#f4a261", fg="#264653")
-    time_label.place(x=30, y=90)
-
-    time_entry = tk.Entry(canvas, bg="#ffffff", fg="#264653", highlightbackground="#e9c46a", relief="flat")
-    time_entry.place(x=30, y=120, width=120)
-
-    time_unit_var = tk.StringVar(value="min")
-    time_unit_menu = tk.OptionMenu(canvas, time_unit_var, "sec", "min", "hour")
-    time_unit_menu.configure(bg="#f4a261", fg="#264653", relief="flat")
-    time_unit_menu.place(x=50, y=150)
-
-    url_entry = None
-    if action == "open_url":
-        url_label = tk.Label(canvas, text="Enter URL:", bg="#f4a261", fg="#264653")
-        url_label.place(x=30, y=190)
-
-        url_entry = tk.Entry(canvas, bg="#ffffff", fg="#264653", highlightbackground="#e9c46a", relief="flat")
-        url_entry.place(x=30, y=210, width=120)
-
-    start_button = tk.Button(
-        canvas,
-        text="Start Timer",
-        command=lambda: [
-            start_timer(
-                action,
-                int(time_entry.get()) if time_entry.get().isdigit() else None,
-                time_unit_var.get(),
-                url_entry.get() if action == "open_url" else None,
-            ),
-            time_entry.delete(0, tk.END),  # Clear time entry after clicking
-            url_entry.delete(0, tk.END) if url_entry else None,  # Clear URL entry if present
-        ],
-        bg="#2a9d8f",
-        fg="#ffffff",
-        activebackground="#37b9a3",
-        activeforeground="#ffffff",
-        relief="flat",
-    )
-    start_button.place(x=50, y=240, width=80)
-
+# Update icon based on dropdown selection
+def update_icon(action):
+    action_icon.config(file=resource_path(f"{action}.png"))
 
 # GUI Setup
 root = tk.Tk()
 root.title("System Action Scheduler")
-root.geometry("880x400")
+root.geometry("700x450")
 root.configure(bg="#d4f1f9")
 
-# Heading
-heading = tk.Label(root, text="System Action Scheduler", font=("Arial", 16), bg="#264653", fg="#ffffff")
-heading.grid(row=0, column=0, columnspan=4, pady=20)
+# Header
+heading = tk.Label(root, text="System Action Scheduler", font=("Arial", 20, "bold"), bg="#264653", fg="#ffffff")
+heading.pack(pady=20, fill="x")
 
-# Add extra spacing between heading and buttons
-root.grid_rowconfigure(1, minsize=20)
+# Unified Action Card
+card_frame = tk.Frame(root, bg="#f4a261", relief="flat", bd=0)
+card_frame.pack(pady=20, padx=40, fill="x")
 
-# Create action sections
-create_action_button("restart", 0, "restart.png")  # Use relative paths for images
-create_action_button("shutdown", 1, "shutdown.png")  # Use relative paths for images
-create_action_button("sleep", 2, "sleep.png")  # Use relative paths for images
-create_action_button("open_url", 3, "url.png")  # Use relative paths for images
+# Dropdown for actions
+action_label = tk.Label(card_frame, text="Choose Action:", bg="#f4a261", fg="#264653", font=("Arial", 12))
+action_label.grid(row=0, column=0, padx=(10, 5), pady=5, sticky="w")
 
-# Run the app
+action_var = tk.StringVar(value="restart")
+action_dropdown = ttk.Combobox(card_frame, textvariable=action_var, values=["Restart", "Shutdown", "Sleep", "Open_URL"])
+action_dropdown.grid(row=0, column=1, padx=(5, 10), pady=5, sticky="w")
+action_dropdown.bind("<<ComboboxSelected>>", lambda e: update_icon(action_var.get()))
+
+# Icon for selected action
+action_icon = tk.PhotoImage(file=resource_path("restart.png"))
+icon_label = tk.Label(card_frame, image=action_icon, bg="#f4a261")
+icon_label.grid(row=1, column=0, columnspan=3, pady=10)
+
+# Instructional text before time input
+instruction_label = tk.Label(card_frame, text="The above action will be performed after the following time:", bg="#f4a261", fg="#264653", font=("Arial", 12))
+instruction_label.grid(row=2, column=0, columnspan=3, padx=10, pady=5, sticky="w")
+
+# Time input and dropdown aligned horizontally
+time_label = tk.Label(card_frame, text="Enter Time:", bg="#f4a261", fg="#264653", font=("Arial", 12))
+time_label.grid(row=3, column=0, padx=(10, 5), pady=5, sticky="w")
+
+time_entry = tk.Entry(card_frame, bg="#ffffff", fg="#264653")
+time_entry.grid(row=3, column=1, padx=(5, 5), pady=5, sticky="w")
+
+time_unit_var = tk.StringVar(value="min")
+time_unit_dropdown = ttk.Combobox(card_frame, textvariable=time_unit_var, values=["Sec", "Min", "Hour"])
+time_unit_dropdown.grid(row=3, column=2, padx=(5, 10), pady=5, sticky="w")
+
+# URL input (only for open_url)
+url_label = tk.Label(card_frame, text="Enter URL:", bg="#f4a261", fg="#264653", font=("Arial", 12))
+url_entry = tk.Entry(card_frame, bg="#ffffff", fg="#264653")
+
+# URL entry visibility control
+def toggle_url_field(*args):
+    if action_var.get() == "open_url":
+        url_label.grid(row=4, column=0, padx=(10, 5), pady=5, sticky="w")  # Display the URL label
+        url_entry.grid(row=4, column=1, columnspan=2, padx=(5, 10), pady=5, sticky="w")  # Display the URL entry
+    else:
+        url_label.grid_remove()  # Remove the URL label
+        url_entry.grid_remove()  # Remove the URL entry
+
+action_var.trace("w", toggle_url_field)  # Attach the trace function to the action dropdown
+
+# Start button
+start_button = tk.Button(card_frame, text="Start Timer", bg="#2a9d8f", fg="#ffffff", font=("Arial", 12, "bold"),
+                         command=lambda: start_timer(action_var.get(), int(time_entry.get()) if time_entry.get().isdigit() else None, time_unit_var.get(), url_entry.get()))
+start_button.grid(row=5, column=0, columnspan=3, pady=20)
+
+# Run app
 root.mainloop()
