@@ -5,6 +5,7 @@ from tkinter import messagebox
 from tkinter import ttk
 import webbrowser
 import sys
+import threading
 
 # Function to handle resource paths
 def resource_path(relative_path):
@@ -15,19 +16,30 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-# Schedule action
+# Schedule action (Runs in a separate thread)
 def schedule_action(action, delay, url=None):
     time.sleep(delay)
+    
+    # Handle different actions based on selected action
     if action == "shutdown":
-        os.system("shutdown /s /t 1") if os.name == "nt" else os.system("shutdown -h now")
+        if os.name == "nt":
+            os.system("shutdown /s /f /t 1")  # Force shutdown on Windows
+        else:
+            os.system("shutdown -h now")  # Shutdown on macOS/Linux
     elif action == "restart":
-        os.system("shutdown /r /t 1") if os.name == "nt" else os.system("shutdown -r now")
+        if os.name == "nt":
+            os.system("shutdown /r /f /t 1")  # Force restart on Windows
+        else:
+            os.system("shutdown -r now")  # Restart on macOS/Linux
     elif action == "sleep":
-        os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0") if os.name == "nt" else os.system("pmset sleepnow")
+        if os.name == "nt":
+            os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")  # Sleep on Windows
+        else:
+            os.system("pmset sleepnow")  # Sleep on macOS
     elif action == "open_url" and url:
-        webbrowser.open(url)
+        webbrowser.open(url)  # Open URL in default browser
 
-# Start timer
+# Start timer (Runs asynchronously in a separate thread)
 def start_timer(action, time_value, time_unit, url=None):
     try:
         if not time_value:
@@ -36,10 +48,22 @@ def start_timer(action, time_value, time_unit, url=None):
         if action == "open_url" and (not url or url.strip() == ""):
             messagebox.showerror("Input Error", "Please enter a valid URL.")
             return
-        delay = time_value * (60 if time_unit == "min" else 3600 if time_unit == "hour" else 1)
+
+        # Calculate delay in seconds based on the time unit
+        if time_unit == "Sec":
+            delay = time_value
+        elif time_unit == "Min":
+            delay = time_value * 60
+        elif time_unit == "Hour":
+            delay = time_value * 3600
+        else:
+            delay = 0  # Invalid time unit (this shouldn't happen)
+        
+        # Show confirmation dialog before scheduling the action
         if messagebox.askyesno("Confirmation", f"Are you sure you want to {action} in {time_value} {time_unit}(s)?"):
-            root.after(100, schedule_action, action, delay, url)
-            clear_fields()  # Clear the fields after starting the timer
+            # Run the action in a separate thread to avoid blocking the UI
+            threading.Thread(target=schedule_action, args=(action.lower(), delay, url)).start()
+            root.after(0, clear_fields)  # Clear the fields after starting the timer
     except ValueError:
         messagebox.showerror("Invalid Input", "Please enter valid values.")
 
@@ -50,7 +74,7 @@ def clear_fields():
 
 # Update icon based on dropdown selection
 def update_icon(action):
-    action_icon.config(file=resource_path(f"{action}.png"))
+    action_icon.config(file=resource_path(f"{action.lower()}.png"))
 
 # GUI Setup
 root = tk.Tk()
@@ -71,7 +95,7 @@ action_label = tk.Label(card_frame, text="Choose Action:", bg="#f4a261", fg="#26
 action_label.grid(row=0, column=0, padx=(10, 5), pady=5, sticky="w")
 
 action_var = tk.StringVar(value="restart")
-action_dropdown = ttk.Combobox(card_frame, textvariable=action_var, values=["Restart", "Shutdown", "Sleep", "Open_URL"])
+action_dropdown = ttk.Combobox(card_frame, textvariable=action_var, values=["restart", "shutdown", "sleep", "open_url"])
 action_dropdown.grid(row=0, column=1, padx=(5, 10), pady=5, sticky="w")
 action_dropdown.bind("<<ComboboxSelected>>", lambda e: update_icon(action_var.get()))
 
@@ -101,7 +125,7 @@ url_entry = tk.Entry(card_frame, bg="#ffffff", fg="#264653")
 
 # URL entry visibility control
 def toggle_url_field(*args):
-    if action_var.get() == "open_url":
+    if action_var.get().lower() == "open_url":  # Make sure comparison is case-insensitive
         url_label.grid(row=4, column=0, padx=(10, 5), pady=5, sticky="w")  # Display the URL label
         url_entry.grid(row=4, column=1, columnspan=2, padx=(5, 10), pady=5, sticky="w")  # Display the URL entry
     else:
